@@ -62,7 +62,7 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 	//接收客户端发送的消息
 	go s.handlerUserInputMsg(conn, u,isLive)
 
-	//超时强踢
+	//超时强踢------还没测试成功
 	for {
 		select {
 		case <-isLive:
