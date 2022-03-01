@@ -60,9 +60,9 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 	//用户是否活跃的channel
 	isLive := make(chan bool)
 	//接收客户端发送的消息
-	go s.handlerUserInputMsg(conn, u,isLive)
+	go s.handlerUserInputMsg(conn, u, isLive)
 
-	//超时强踢------还没测试成功
+	//超时强踢------还没测试成功-----
 	for {
 		select {
 		case <-isLive:
@@ -79,7 +79,7 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 }
 
 //处理用户输入消息
-func (s *Server) handlerUserInputMsg(conn net.Conn, u *User,isLive chan bool) {
+func (s *Server) handlerUserInputMsg(conn net.Conn, u *User, isLive chan bool) {
 	buf := make([]byte, 4096)
 
 	for {
