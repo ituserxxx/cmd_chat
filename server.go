@@ -2,65 +2,117 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
-	ip         string
-	port       int
-	msg        chan string
-	allUserMap map[string]*User
-	mapLock    sync.RWMutex
+	ip        string
+	port      int
+	msg       chan string
+	onlineMap map[string]*User
+	mapLock   sync.RWMutex
 }
 
-func NewServer(ip string,port int)*Server  {
+//初始化服务连接
+func NewServer(ip string, port int) *Server {
 	return &Server{
-		ip:         ip,
-		port:       port,
-		allUserMap: make(map[string]*User),
-		msg:        make(chan string),
+		ip:        ip,
+		port:      port,
+		onlineMap: make(map[string]*User), //在线用户
+		msg:       make(chan string),      //广播消息
 	}
 }
 
-func (s *Server)Start()  {
-	listener,err := net.Listen("tcp",fmt.Sprintf("%s:%d",s.ip,s.port))
+func (s *Server) Start() {
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 	if err != nil {
-		fmt.Println("listen err",err.Error())
+		fmt.Println("listen err", err.Error())
 		return
 	}
 	defer listener.Close()
 
-	//监听上线
-	go s.hanlerMsg()
+	fmt.Println("房间已开启~~")
 
-	//监听用户连接
-	for  {
-		con,err := listener.Accept()
+	//监听广播消息
+	go s.GuangboMsg()
+
+	for {
+		//监听用户连接
+		con, err := listener.Accept()
 		if err != nil {
-			fmt.Println("listen accept err",err.Error())
+			fmt.Println("listen accept err", err.Error())
 			continue
 		}
+		//处理用户逻辑
 		go s.handlerUserAccept(con)
 	}
 }
-func (s *Server)hanlerMsg()  {
-	for  {
-		m:= <-s.msg
+
+func (s *Server) handlerUserAccept(conn net.Conn) {
+	//初始化 用户
+	u := NewUser("xxx1:="+conn.RemoteAddr().String(), conn, s)
+
+	//用户上线
+	u.Online()
+	//用户是否活跃的channel
+	isLive := make(chan bool)
+	//接收客户端发送的消息
+	go s.handlerUserInputMsg(conn, u,isLive)
+
+	//超时强踢
+	for {
+		select {
+		case <-isLive:
+		case <-time.After(time.Second * 10):
+			u.C <- "你已经被剔下线\n"
+			close(u.C)
+			_ = conn.Close()
+		default:
+
+		}
+	}
+	//当前handler阻塞
+	select {}
+}
+
+//处理用户输入消息
+func (s *Server) handlerUserInputMsg(conn net.Conn, u *User,isLive chan bool) {
+	buf := make([]byte, 4096)
+
+	for {
+		l, err := conn.Read(buf)
+		//合法关闭
+		if l == 0 {
+			//广播用户下线
+			u.Downline()
+			return
+		}
+		if err != nil && err != io.EOF {
+			fmt.Println("read Err :", err.Error())
+			return
+		}
+		//获取出消息
+		msg := string(buf[:l-1])
+		//发送消息
+		u.DoMessage(msg)
+		//当前用户是活跃的
+		isLive <- true
+	}
+
+}
+func (s *Server) GuangboMsg() {
+	for {
+		//取出广播消息
+		m := <-s.msg
 		s.mapLock.Lock()
-		for _, user := range s.allUserMap {
-			user.Send(m)
+
+		//遍历发送给每个用户的消息 channel
+		for _, user := range s.onlineMap {
+			user.C <- m
 		}
 		s.mapLock.Unlock()
 	}
-}
-func (s *Server)handlerUserAccept(conn net.Conn)  {
-	u := &User{
-		Name: "韩信偷塔"+conn.RemoteAddr().String(),
-		Con:  conn,
-	}
-	s.mapLock.Lock()
-	s.allUserMap[u.Name] = u
-	s.mapLock.Unlock()
-	s.msg <- "user :"+u.Name+"---上线了\n"
 }
