@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -43,40 +43,40 @@ func (u *User) HandleMsg() {
 func (u *User) DoMessage(msg string) {
 	//输入who 则查询在线的所有人
 	if msg == "who" {
-		u.Ser.mapLock.Lock()
-		for _, us := range u.Ser.onlineMap {
+		u.Ser.MapLock.Lock()
+		for _, us := range u.Ser.OnlineMap {
 			u.C <- "用户：" + us.Name + "在线\n"
 		}
-		u.Ser.mapLock.Unlock()
+		u.Ser.MapLock.Unlock()
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
 		name := strings.Split(msg, "|")[1]
 
-		u.Ser.mapLock.Lock()
-		_, ok := u.Ser.onlineMap[name]
+		u.Ser.MapLock.Lock()
+		_, ok := u.Ser.OnlineMap[name]
 		if ok {
 			u.C <- "用户名已存在\n"
-			u.Ser.mapLock.Unlock()
+			u.Ser.MapLock.Unlock()
 			return
 		}
-		delete(u.Ser.onlineMap, u.Name)
-		u.Ser.onlineMap[name] = u
+		delete(u.Ser.OnlineMap, u.Name)
+		u.Ser.OnlineMap[name] = u
 		u.Name = name
 		u.C <- "更名成功->" + name + "\n"
-		u.Ser.mapLock.Unlock()
+		u.Ser.MapLock.Unlock()
 	} else {
-		u.Ser.msg <- "[user :" + u.Name + msg + "\n"
+		u.Ser.Msg <- "[user :" + u.Name + msg + "\n"
 	}
 
 }
 func (u *User) Downline() {
-	u.Ser.msg <- "[user :" + u.Name + "]---xia线了\n"
+	u.Ser.Msg <- "[user :" + u.Name + "]---xia线了\n"
 }
 
 func (u *User) Online() {
 	//加入在线用户列表
-	u.Ser.mapLock.Lock()
-	u.Ser.onlineMap[u.Name] = u
-	u.Ser.mapLock.Unlock()
+	u.Ser.MapLock.Lock()
+	u.Ser.OnlineMap[u.Name] = u
+	u.Ser.MapLock.Unlock()
 	// 广播消息给所有用户
-	u.Ser.msg <- "[user :" + u.Name + "]---上线了\n"
+	u.Ser.Msg <- "[user :" + u.Name + "]---上线了\n"
 }

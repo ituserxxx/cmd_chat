@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -11,9 +11,9 @@ import (
 type Server struct {
 	ip        string
 	port      int
-	msg       chan string
-	onlineMap map[string]*User
-	mapLock   sync.RWMutex
+	Msg       chan string
+	OnlineMap map[string]*User
+	MapLock   sync.RWMutex
 }
 
 //初始化服务连接
@@ -21,8 +21,8 @@ func NewServer(ip string, port int) *Server {
 	return &Server{
 		ip:        ip,
 		port:      port,
-		onlineMap: make(map[string]*User), //在线用户
-		msg:       make(chan string),      //广播消息
+		OnlineMap: make(map[string]*User), //在线用户
+		Msg:       make(chan string),      //广播消息
 	}
 }
 
@@ -60,7 +60,7 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 	//用户是否活跃的channel
 	isLive := make(chan bool)
 	//接收客户端发送的消息
-	go s.handlerUserInputMsg(conn, u, isLive)
+	s.handlerUserInputMsg(conn, u, isLive)
 
 	//超时强踢------还没测试成功-----
 	for {
@@ -75,7 +75,7 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 		}
 	}
 	//当前handler阻塞
-	select {}
+
 }
 
 //处理用户输入消息
@@ -106,13 +106,13 @@ func (s *Server) handlerUserInputMsg(conn net.Conn, u *User, isLive chan bool) {
 func (s *Server) GuangboMsg() {
 	for {
 		//取出广播消息
-		m := <-s.msg
-		s.mapLock.Lock()
+		m := <-s.Msg
+		s.MapLock.Lock()
 
 		//遍历发送给每个用户的消息 channel
-		for _, user := range s.onlineMap {
+		for _, user := range s.OnlineMap {
 			user.C <- m
 		}
-		s.mapLock.Unlock()
+		s.MapLock.Unlock()
 	}
 }
