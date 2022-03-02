@@ -11,9 +11,9 @@ import (
 type Server struct {
 	ip        string
 	port      int
-	Msg       chan string
-	OnlineMap map[string]*User
-	MapLock   sync.RWMutex
+	msg       chan string
+	onlineMap map[string]*User
+	mapLock   sync.RWMutex
 }
 
 //初始化服务连接
@@ -21,8 +21,8 @@ func NewServer(ip string, port int) *Server {
 	return &Server{
 		ip:        ip,
 		port:      port,
-		OnlineMap: make(map[string]*User), //在线用户
-		Msg:       make(chan string),      //广播消息
+		onlineMap: make(map[string]*User), //在线用户
+		msg:       make(chan string),      //广播消息
 	}
 }
 
@@ -57,62 +57,63 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 
 	//用户上线
 	u.Online()
-	//用户是否活跃的channel
+
+	// 在线状态
 	isLive := make(chan bool)
 	//接收客户端发送的消息
-	s.handlerUserInputMsg(conn, u, isLive)
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			l, err := conn.Read(buf)
+			//合法关闭
+			if l == 0 {
+				//广播用户下线
+				u.Downline()
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Println("read Err :", err.Error())
+				return
+			}
+			//获取出消息
+			msg := string(buf[:l-1])
+			//发送消息
+			u.DoMessage(msg)
+			isLive<-true
+		}
+	}()
 
 	//超时强踢------还没测试成功-----
 	for {
 		select {
 		case <-isLive:
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 5):
 			u.C <- "你已经被剔下线\n"
 			close(u.C)
 			_ = conn.Close()
-		default:
-
+			//s.mapLock.Lock()
+			//delete(s.onlineMap, u.Name)
+			//s.mapLock.Unlock()
 		}
 	}
 	//当前handler阻塞
-
+	//select {}
 }
 
 //处理用户输入消息
 func (s *Server) handlerUserInputMsg(conn net.Conn, u *User, isLive chan bool) {
-	buf := make([]byte, 4096)
-
-	for {
-		l, err := conn.Read(buf)
-		//合法关闭
-		if l == 0 {
-			//广播用户下线
-			u.Downline()
-			return
-		}
-		if err != nil && err != io.EOF {
-			fmt.Println("read Err :", err.Error())
-			return
-		}
-		//获取出消息
-		msg := string(buf[:l-1])
-		//发送消息
-		u.DoMessage(msg)
-		//当前用户是活跃的
-		isLive <- true
-	}
 
 }
 func (s *Server) GuangboMsg() {
 	for {
 		//取出广播消息
-		m := <-s.Msg
-		s.MapLock.Lock()
+		m := <-s.msg
+		s.mapLock.Lock()
 
 		//遍历发送给每个用户的消息 channel
-		for _, user := range s.OnlineMap {
+		for _, user := range s.onlineMap {
 			user.C <- m
 		}
-		s.MapLock.Unlock()
+		s.mapLock.Unlock()
 	}
 }
