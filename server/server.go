@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"sync"
-	"time"
 )
 
 type Server struct {
@@ -53,13 +52,13 @@ func (s *Server) Start() {
 
 func (s *Server) handlerUserAccept(conn net.Conn) {
 	//初始化 用户
-	u := NewUser("xxx1:="+conn.RemoteAddr().String(), conn, s)
+	u := NewUser("【"+conn.RemoteAddr().String()+"】", conn, s)
 
 	//用户上线
 	u.Online()
 
 	// 在线状态
-	isLive := make(chan bool)
+	//isLive := make(chan bool)
 	//接收客户端发送的消息
 	go func() {
 		buf := make([]byte, 4096)
@@ -79,31 +78,29 @@ func (s *Server) handlerUserAccept(conn net.Conn) {
 			msg := string(buf[:l-1])
 			//发送消息
 			u.DoMessage(msg)
-			isLive<-true
+			//isLive<-true
 		}
 	}()
 
 	//超时强踢------还没测试成功-----
-	for {
-		select {
-		case <-isLive:
-		case <-time.After(time.Second * 5):
-			u.C <- "你已经被剔下线\n"
-			close(u.C)
-			_ = conn.Close()
-			//s.mapLock.Lock()
-			//delete(s.onlineMap, u.Name)
-			//s.mapLock.Unlock()
-		}
+	//for {
+	//	select {
+	//	case <-isLive:
+	//	case <-time.After(time.Second * 5):
+	//		u.C <- "你已经被剔下线\n"
+	//		close(u.C)
+	//		_ = conn.Close()
+	//		//s.mapLock.Lock()
+	//		//delete(s.onlineMap, u.Name)
+	//		//s.mapLock.Unlock()
+	//	}
+	//}
+	select {
+
 	}
-	//当前handler阻塞
-	//select {}
 }
 
-//处理用户输入消息
-func (s *Server) handlerUserInputMsg(conn net.Conn, u *User, isLive chan bool) {
 
-}
 func (s *Server) GuangboMsg() {
 	for {
 		//取出广播消息
