@@ -76,7 +76,7 @@ func (u *User) DoMessage(msg string) {
 			u.C <- "消息格式不对，示例：to|张三|你好\n"
 			return
 		}
-		toUser.C<-"用户："+u.Name+"对你说："+toMsg
+		toUser.C<-"用户："+u.Name+"对你说："+toMsg+"\n"
 
 	} else {
 		u.Ser.msg <- "[user :说----->" + u.Name + msg + "\n"
