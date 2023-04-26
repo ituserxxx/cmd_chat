@@ -1,4 +1,4 @@
-package main
+package User
 
 import (
 	"flag"
@@ -16,16 +16,7 @@ type Client struct {
 	Flag       int //当前用户模式
 }
 
-//命令解析：
-var serIp string
-var serPo int
-
-func init() {
-	flag.StringVar(&serIp, "ip", "127.0.0.1", "设置服务器ip(默认127.0.0.1)")
-	flag.IntVar(&serPo, "port", 8888, "设置服务器port(默认8888)")
-}
-
-func main() {
+func NewUserClient(serIp string, serPo int) {
 	flag.Parse()
 	cl := NewClient(serIp, serPo)
 	if cl == nil {
