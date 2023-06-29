@@ -5,38 +5,47 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
-type Server struct {
-	ip        string
-	port      int
-	msg       chan string
-	onlineMap map[string]*User
-	mapLock   sync.RWMutex
+type ChatServer struct {
+	ip              string
+	port            int
+	GbMsg           chan string      //广播消息
+	onlineUserTotal int64            //在线用户总数
+	onlineMap       map[string]*User //在线用户
+	mapLock         sync.RWMutex
+	PrintChan       chan string //大厅日志
 }
 
-//初始化服务连接
-func NewServer(ip string, port int) *Server {
-	return &Server{
+var IMserver *ChatServer
+
+func NewServer(ip string, port int) {
+	ser := &ChatServer{
 		ip:        ip,
 		port:      port,
-		onlineMap: make(map[string]*User), //在线用户
-		msg:       make(chan string),      //广播消息
+		onlineMap: make(map[string]*User),
+		GbMsg:     make(chan string),
+		PrintChan: make(chan string),
 	}
+	IMserver = ser
+	ser.Start()
 }
 
-func (s *Server) Start() {
+func (s *ChatServer) Start() {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
 	if err != nil {
 		fmt.Println("listen err", err.Error())
 		return
 	}
 	defer listener.Close()
-
-	fmt.Println("房间已开启~~")
-
 	//监听广播消息
 	go s.GuangboMsg()
+
+	// 大厅日志输出
+	go s.printLog()
+
+	s.PrintChan <- "~~服务大厅已开启~~"
 
 	for {
 		//监听用户连接
@@ -50,67 +59,67 @@ func (s *Server) Start() {
 	}
 }
 
-func (s *Server) handlerUserAccept(conn net.Conn) {
+func (s *ChatServer) handlerUserAccept(conn net.Conn) {
 	//初始化 用户
-	u := NewUser("【"+conn.RemoteAddr().String()+"】", conn, s)
-
-	//用户上线
-	u.Online()
-
-	// 在线状态
-	//isLive := make(chan bool)
+	u := CreateNewUser(fmt.Sprintf("%d", time.Now().UnixMicro()), conn)
+	//广播用户下线
+	defer u.Downline()
 	//接收客户端发送的消息
-	go func() {
-		buf := make([]byte, 4096)
-		for {
-			l, err := conn.Read(buf)
-			//合法关闭
-			if l == 0 {
-				//广播用户下线
-				u.Downline()
-				return
-			}
-			if err != nil && err != io.EOF {
-				fmt.Println("read Err :", err.Error())
-				return
-			}
-			//获取出消息
-			msg := string(buf[:l-1])
-			//发送消息
-			u.DoMessage(msg)
-			//isLive<-true
+	buf := make([]byte, 1024)
+	for {
+		l, err := conn.Read(buf)
+		//合法关闭
+		if l == 0 {
+			return
 		}
-	}()
-
-	//超时强踢------还没测试成功-----
-	//for {
-	//	select {
-	//	case <-isLive:
-	//	case <-time.After(time.Second * 5):
-	//		u.C <- "你已经被剔下线\n"
-	//		close(u.C)
-	//		_ = conn.Close()
-	//		//s.mapLock.Lock()
-	//		//delete(s.onlineMap, u.Name)
-	//		//s.mapLock.Unlock()
-	//	}
-	//}
-	select {
-
+		if err != nil && err != io.EOF {
+			fmt.Println("read Err :", err.Error())
+			continue
+		}
+		//获取出消息
+		msg := string(buf[:l])
+		//发送消息
+		u.DoMessage(msg)
 	}
 }
 
-
-func (s *Server) GuangboMsg() {
+func (s *ChatServer) GuangboMsg() {
 	for {
 		//取出广播消息
-		m := <-s.msg
-		s.mapLock.Lock()
-
+		m := <-s.GbMsg
 		//遍历发送给每个用户的消息 channel
 		for _, user := range s.onlineMap {
-			user.C <- m
+			user.C <- "\n" + m
 		}
-		s.mapLock.Unlock()
+	}
+}
+func (s *ChatServer) printLog() {
+	for {
+		v, ok := <-s.PrintChan
+		if ok {
+			fmt.Printf("\n[log->%s] %s", time.Now().Format("2006-01-02 15:04:05"), v)
+		}
+	}
+}
+func (s *ChatServer) GuangboMsgToOtherUser(ukey string, msg string) {
+	msgF := `
+用户：%s		%s
+%s
+`
+	t1 := time.Now().Format("2006-01-02 15:04:05")
+	for _, user := range s.onlineMap {
+		if user.ID != ukey {
+			user.C <- fmt.Sprintf(msgF, ukey, t1, msg)
+		}
+	}
+}
+func (s *ChatServer) UserOnlineAndDownline(ukey , msg string) {
+
+	infoF := `~~notice 用户%s	%s	%s`
+	t1 := time.Now().Format("2006-01-02 15:04:05")
+	for _, user := range s.onlineMap {
+		if user.ID != ukey {
+			user.C <- fmt.Sprintf(infoF,ukey, msg,t1)
+		}
 	}
 }

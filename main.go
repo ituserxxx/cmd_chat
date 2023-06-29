@@ -1,28 +1,23 @@
 package main
 
 import (
-	"fmt"
-	User "go_im_room/client"
-	"go_im_room/server"
-	"os"
+	User "cmd_chat/client"
+	"cmd_chat/server"
+	"flag"
 )
 
 func main() {
 
+	var isSer bool
+	var cname string
+	flag.BoolVar(&isSer, "s", true, "开启服务端,默认true")
+	flag.StringVar(&cname, "na", "", "客户名称,不能为空")
+	flag.Parse()
 
-	if len(os.Args) < 2{
-		// 启动服务端：go run main.go s
-		// 启动客户端：go run main.go c
-		fmt.Println("需要参数启动参数，例如：go run main.go  s ")
-		os.Exit(1)
+	if isSer{
+		server.NewServer("127.0.0.1",8888)
+	}else if cname!=""{
+		User.NewUserClient("127.0.0.1",8888,cname)
 	}
-	parasm := os.Args[1:]
-	for _, v := range parasm {
-		if v == "s"{
-			server.NewServer("127.0.0.1",8888).Start()
-		}
-		if v== "c"{
-			User.NewUserClient("127.0.0.1",8888)
-		}
-	}
+
 }

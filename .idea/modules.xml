@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/go_im_room.iml" filepath="$PROJECT_DIR$/.idea/go_im_room.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cmd_chat.iml" filepath="$PROJECT_DIR$/.idea/cmd_chat.iml" />
     </modules>
   </component>
 </project>

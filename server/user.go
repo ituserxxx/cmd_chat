@@ -1,72 +1,74 @@
 package server
 
 import (
+	"cmd_chat/utils"
 	"fmt"
 	"net"
 	"strings"
 )
 
 type User struct {
+	ID   string
 	Name string
 	C    chan string
-	Con  net.Conn
-	Ser  *Server
+	Conn net.Conn
 }
 
-func NewUser(name string, con net.Conn, server *Server) *User {
+func CreateNewUser(name string, con net.Conn) *User {
 	//初始化用户
 	u := &User{
+		ID:   utils.Krand(),
 		Name: name,
 		C:    make(chan string),
-		Con:  con,
-		Ser:  server,
+		Conn: con,
 	}
 
 	// 开启消息接收监听
 	go u.HandleMsg()
-
+	u.Online()
 	return u
 
 }
 
-// 监听当前User channel ，一旦有消息，直接发送给当前用户
+// HandleMsg 监听当前User channel ，一旦有消息，直接发送给当前用户
 func (u *User) HandleMsg() {
 	for {
 		m := <-u.C
-		_, err := u.Con.Write([]byte(m))
+		_, err := u.Conn.Write([]byte("\n"+m))
 		if err != nil {
-			fmt.Println("send msg fail", err.Error())
+			fmt.Println("send GbMsg fail", err.Error())
 		}
 	}
 
 }
-//处理交互的消息
+
+// DoMessage 处理交互的消息
 func (u *User) DoMessage(msg string) {
 	//输入who 则查询在线的所有人
 	if msg == "who" {//当前在线用户
-		u.Ser.mapLock.Lock()
-		for _, us := range u.Ser.onlineMap {
-			u.C <- "用户：" + us.Name + "在线\n"
+		IMserver.mapLock.Lock()
+
+		for _, us := range IMserver.onlineMap {
+			u.C <- "|" + us.Name + "|在线"
 		}
-		u.Ser.mapLock.Unlock()
+		IMserver.mapLock.Unlock()
 	} else if len(msg) > 7 && msg[:7] == "rename|" {//改名功能
 		name := strings.Split(msg, "|")[1]
-
-		u.Ser.mapLock.Lock()
-		_, ok := u.Ser.onlineMap[name]
+		IMserver.mapLock.Lock()
+		_, ok := IMserver.onlineMap[name]
 		if ok {
 			u.C <- "用户名已存在\n"
-			u.Ser.mapLock.Unlock()
+			IMserver.mapLock.Unlock()
 			return
 		}
-		delete(u.Ser.onlineMap, u.Name)
-		u.Ser.onlineMap[name] = u
-		u.Ser.mapLock.Unlock()
+		delete(IMserver.onlineMap, u.Name)
+		IMserver.onlineMap[name] = u
+		IMserver.mapLock.Unlock()
 		u.Name = name
 		u.C <- "更名成功->" + name + "\n"
 	}else if len(msg) > 4 && msg[:2] == "to"{ //私聊功能
 		toU := strings.Split(msg, "|")[1]
-		toUser,ok := u.Ser.onlineMap[toU]
+		toUser,ok := IMserver.onlineMap[toU]
 		if !ok{
 			u.C <- "当前用户不存在\n"
 			return
@@ -78,23 +80,31 @@ func (u *User) DoMessage(msg string) {
 		}
 		toUser.C<-"用户："+u.Name+"对你说："+toMsg+"\n"
 
-	} else {
-		u.Ser.msg <- "[user :说----->" + u.Name + msg + "\n"
+	}else if msg[:3]=="sys"{
+
+	}else {
+		IMserver.GuangboMsgToOtherUser( u.ID,msg)
 	}
 
 }
 func (u *User) Downline() {
-	u.Ser.msg <- "[user :说----->" + u.Name + "]---xia线了\n"
-	//u.Ser.mapLock.Lock()
-	//delete(u.Ser.onlineMap, u.Name)
-	//u.Ser.mapLock.Unlock()
+	IMserver.mapLock.Lock()
+	delete(IMserver.onlineMap, u.ID)
+	IMserver.mapLock.Unlock()
+	IMserver.onlineUserTotal--
+	IMserver.PrintChan<-fmt.Sprintf("user down:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
+	IMserver.UserOnlineAndDownline( u.ID,"下线")
+	_= u.Conn.Close()
+
 }
 
 func (u *User) Online() {
 	//加入在线用户列表
-	u.Ser.mapLock.Lock()
-	u.Ser.onlineMap[u.Name] = u
-	u.Ser.mapLock.Unlock()
-	// 广播消息给所有用户
-	u.Ser.msg <- "[user :说----->" + u.Name + "]---上线了\n"
+	IMserver.mapLock.Lock()
+	IMserver.onlineMap[u.ID] = u
+	IMserver.mapLock.Unlock()
+	// 在线总数+1
+	IMserver.onlineUserTotal++
+	IMserver.UserOnlineAndDownline( u.ID,"上线")
+	IMserver.PrintChan<-fmt.Sprintf("user online:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
 }
