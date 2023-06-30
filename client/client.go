@@ -1,10 +1,14 @@
 package User
 
 import (
+	"cmd_chat/comm"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net"
+	"strings"
+	"time"
 )
 
 type Client struct {
@@ -12,19 +16,28 @@ type Client struct {
 	ServerPort int
 	Name       string
 	Conn       net.Conn
-	Flag       int //当前用户模式
-	Out bool
-	Msg chan string
+	GoOut      chan string
+	Msg        chan comm.MsgInfo
 }
 
-func NewUserClient(serIp string, serPo int,cname string) {
+var msgF = `
+用户：%s		%s
+%s
+`
+var infoF = `~~notice 用户%s	%s	%s`
+
+func NewUserClient(serIp string, serPo int, cname string) {
+	if len(cname) == 0 {
+		fmt.Println("昵称一定要有哦")
+	}
 	flag.Parse()
 	cl := &Client{
-		Name: cname,
+		Name:       cname,
 		ServerIp:   serIp,
 		ServerPort: serPo,
 		Conn:       nil,
-		Flag:       999,
+		Msg:        make(chan comm.MsgInfo),
+		GoOut:      make(chan string),
 	}
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", serIp, serPo))
 	if err != nil {
@@ -35,88 +48,51 @@ func NewUserClient(serIp string, serPo int,cname string) {
 	// 监听用户输入
 	go cl.handleUserAcceptMsg()
 	go cl.listenSendChan()
-	cl.Msg<-"sys|"+cname
-	cl.listenUserInput()
-	_ = cl.Conn.Close()
-}
+	cl.Msg <- comm.MsgInfo{
+		Event:comm.EventInitName,
+		Data:  cname,
+	}
 
-
-func (c *Client) SelectOnlineUser()  {
-	m := "who\n"
-	_, err := c.Conn.Write([]byte(m))
-	if err != nil {
-		fmt.Println("SelectOnlineUser  send fail", err.Error())
+	select {
+	case <-cl.GoOut:
 		return
-	}
-}
-func (c *Client) PrviteChat()  {
-	var remoteName string
-	var chatMsg string
-
-	c.SelectOnlineUser()
-
-	fmt.Println(">>>>>选择聊天对象：")
-	_, _ = fmt.Scanln(&remoteName)
-	for remoteName != "exit"{
-		fmt.Println("<<<<<输入消息：")
-		_, _ = fmt.Scanln(&chatMsg)
-		for chatMsg != "exit"{
-			if len(chatMsg) != 0{
-				m := "to|"+remoteName+"|"+chatMsg
-				_, err := c.Conn.Write([]byte(m))
-				if err != nil {
-					fmt.Println("PrviteChat send fail", err.Error())
-					break
-				}
-			}
-			chatMsg = ""
-			fmt.Println("<<<<<<输入消息：")
-			_, _ = fmt.Scanln(&chatMsg)
-		}
-		//从私聊退出后 再次选择用户
-		c.SelectOnlineUser()
-		remoteName = ""
-		fmt.Println(">>>>选择聊天对象：")
-		_, _ = fmt.Scanln(&remoteName)
+	case <-time.After(time.Second * 5):
+		break
 	}
 
-}
-
-func (c *Client) UpdateName() bool {
-	fmt.Println("请输入用户名：")
-	_, _ = fmt.Scanln(&c.Name)
-	m := "rename|" + c.Name
-	c.Msg<-m
-	return true
-}
-func (c *Client) listenUserInput()  {
 	var chatMsg string
-	_, _ = fmt.Scanln(&chatMsg)
 	for chatMsg != "exit" {
-		if len(chatMsg) != 0{
-			c.Msg<-chatMsg
+		if len(chatMsg) != 0 {
+			cl.Msg <- comm.MsgInfo{
+				Event: comm.EventPublicMsg,
+				Data:  cl.Name+":" +chatMsg,
+			}
+
 		}
 		chatMsg = ""
 		_, _ = fmt.Scanln(&chatMsg)
+
 	}
-	return
+	_ = cl.Conn.Close()
+	close(cl.Msg)
 }
+
+
+
 func (c *Client) listenSendChan() {
 	for {
 		m := <-c.Msg
-		_, err := c.Conn.Write([]byte("\n"+m))
+		v, _ := json.Marshal(m)
+		_, err := c.Conn.Write(v)
 		if err != nil {
-			fmt.Println("client send Msg fail", err.Error())
+			fmt.Println("client send Data fail", err.Error())
 		}
 	}
 }
 //监听客户端输入，然后在发送给服务端
 func (c *Client) handleUserAcceptMsg() {
-	myMsgF := `(我)：%s`
-	fmt.Println(fmt.Sprintf(myMsgF,c.Name))
 	//一旦client.conn 有数据就copy 到stdout 标准输出上，永久阻塞监听
 	//io.Copy(os.Stdout, c.Conn)
-
 	buf := make([]byte, 1024)
 	for {
 		l, err := c.Conn.Read(buf)
@@ -128,10 +104,44 @@ func (c *Client) handleUserAcceptMsg() {
 			fmt.Println("read Err :", err.Error())
 			continue
 		}
-		// 打印收到的消息
-		msg := string(buf[:l])
-		fmt.Println(msg)
-		fmt.Println(fmt.Sprintf(myMsgF,c.Name))
+		// 获取收到的消息
+		msg := strings.TrimSpace(string(buf[:l]))
+		var d *comm.MsgInfo
+		err = json.Unmarshal([]byte(msg), &d)
+		if err != nil {
+			fmt.Println("unmarshal failed!")
+			continue
+		}
+		c.DoMessage(d)
 	}
+
+}
+func (c *Client) DoMessage(msg *comm.MsgInfo) {
+	if msg.Event == comm.EventInitName {
+		if msg.Code != 0{
+			fmt.Println(msg.Data)
+			c.GoOut<-"1"
+			return
+		}
+		c.Name = msg.Data
+		fmt.Println(fmt.Sprintf( `(我)：%s`, c.Name))
+		return
+	}
+	if msg.Event == comm.EventAllUsers {
+		fmt.Println(msg.Data)
+		//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
+		return
+	}
+	if msg.Event == comm.EventAT {
+		if  msg.Code != 0{
+			fmt.Println(msg.Data)
+			return
+		}
+	}
+	fmt.Println("\n"+msg.Data)
+	if msg.Event != comm.EventSysInfo{
+		fmt.Print(`(我)：`)
+	}
+	//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
 
 }

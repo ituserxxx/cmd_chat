@@ -1,4 +1,4 @@
-package utils
+package comm
 
 import (
 	"math/rand"
@@ -14,7 +14,7 @@ const (
 
 // 随机字符串
 func Krand() string {
-	return genKrand(6, KC_RAND_KIND_ALL)
+	return genKrand(6, KC_RAND_KIND_LOWER)
 }
 func genKrand(size int, kind int) string {
 	ikind, kinds, result := kind, [][]int{[]int{10, 48}, []int{26, 97}, []int{26, 65}}, make([]byte, size)

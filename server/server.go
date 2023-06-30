@@ -1,9 +1,12 @@
 package server
 
 import (
+	"cmd_chat/comm"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -61,7 +64,7 @@ func (s *ChatServer) Start() {
 
 func (s *ChatServer) handlerUserAccept(conn net.Conn) {
 	//初始化 用户
-	u := CreateNewUser(fmt.Sprintf("%d", time.Now().UnixMicro()), conn)
+	u := CreateNewUser("", conn)
 	//广播用户下线
 	defer u.Downline()
 	//接收客户端发送的消息
@@ -70,17 +73,25 @@ func (s *ChatServer) handlerUserAccept(conn net.Conn) {
 		l, err := conn.Read(buf)
 		//合法关闭
 		if l == 0 {
-			return
+			break
 		}
 		if err != nil && err != io.EOF {
 			fmt.Println("read Err :", err.Error())
 			continue
 		}
-		//获取出消息
-		msg := string(buf[:l])
-		//发送消息
-		u.DoMessage(msg)
+		// 获取收到的消息
+		msg := strings.TrimSpace(string(buf[:l]))
+
+		var d *comm.MsgInfo
+		err = json.Unmarshal([]byte(msg), &d)
+		if err != nil {
+			fmt.Println("unmarshal failed!")
+			continue
+		}
+		u.DoMessage(d)
 	}
+
+
 }
 
 func (s *ChatServer) GuangboMsg() {
@@ -89,7 +100,10 @@ func (s *ChatServer) GuangboMsg() {
 		m := <-s.GbMsg
 		//遍历发送给每个用户的消息 channel
 		for _, user := range s.onlineMap {
-			user.C <- "\n" + m
+			user.C <- comm.MsgInfo{
+				Event: comm.EventGuangbo,
+				Data:  m,
+			}
 		}
 	}
 }
@@ -101,25 +115,18 @@ func (s *ChatServer) printLog() {
 		}
 	}
 }
-func (s *ChatServer) GuangboMsgToOtherUser(ukey string, msg string) {
-	msgF := `
-用户：%s		%s
-%s
-`
-	t1 := time.Now().Format("2006-01-02 15:04:05")
-	for _, user := range s.onlineMap {
-		if user.ID != ukey {
-			user.C <- fmt.Sprintf(msgF, ukey, t1, msg)
-		}
-	}
-}
-func (s *ChatServer) UserOnlineAndDownline(ukey , msg string) {
 
-	infoF := `~~notice 用户%s	%s	%s`
-	t1 := time.Now().Format("2006-01-02 15:04:05")
+func (s *ChatServer) GuangboMsgToOtherUser(event,uId, msg string) {
+
 	for _, user := range s.onlineMap {
-		if user.ID != ukey {
-			user.C <- fmt.Sprintf(infoF,ukey, msg,t1)
+		if user.ID != uId {
+			if user.Name != ""{
+				uId = user.Name
+			}
+			user.C <-comm.MsgInfo{
+				Event: event,
+				Data:  msg,
+			}
 		}
 	}
 }
