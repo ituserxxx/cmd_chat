@@ -116,13 +116,19 @@ func (s *ChatServer) printLog() {
 	}
 }
 
-func (s *ChatServer) GuangboMsgToOtherUser(event,uId, msg string) {
+func (s *ChatServer) GuangboMsgToAllUser(event, msg string) {
 
 	for _, user := range s.onlineMap {
-		if user.ID != uId {
-			if user.Name != ""{
-				uId = user.Name
+
+			user.C <-comm.MsgInfo{
+				Event: event,
+				Data:  msg,
 			}
+		}
+}
+func (s *ChatServer) GuangboMsgToOtherUser(event,uId, msg string) {
+	for _, user := range s.onlineMap {
+		if user.ID != uId {
 			user.C <-comm.MsgInfo{
 				Event: event,
 				Data:  msg,

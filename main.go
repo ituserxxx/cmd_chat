@@ -1,11 +1,25 @@
 package main
 
 import (
+	"bufio"
 	User "cmd_chat/client"
 	"cmd_chat/server"
 	"flag"
+	"os"
 )
 
+func main1() {
+	//var chatMsg string
+	//_, _ = fmt.Scan(&chatMsg)
+	rd  := bufio.NewReader(os.Stdin)
+	res,_,err := rd.ReadLine()
+	if err != nil {
+		println(err.Error())
+		return
+	}
+	println("------",string(res))
+
+}
 func main() {
 
 	var isSer bool

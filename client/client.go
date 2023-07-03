@@ -1,12 +1,14 @@
 package User
 
 import (
+	"bufio"
 	"cmd_chat/comm"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"time"
 )
@@ -20,11 +22,6 @@ type Client struct {
 	Msg        chan comm.MsgInfo
 }
 
-var msgF = `
-用户：%s		%s
-%s
-`
-var infoF = `~~notice 用户%s	%s	%s`
 
 func NewUserClient(serIp string, serPo int, cname string) {
 	if len(cname) == 0 {
@@ -59,19 +56,37 @@ func NewUserClient(serIp string, serPo int, cname string) {
 	case <-time.After(time.Second * 5):
 		break
 	}
-
-	var chatMsg string
+ 	var chatMsg string
+	rd  := bufio.NewReader(os.Stdin)
+	rdMsg,_,err := rd.ReadLine()
+	if err != nil {
+		println(err.Error())
+		return
+	}
+	chatMsg = string(rdMsg)
 	for chatMsg != "exit" {
 		if len(chatMsg) != 0 {
-			cl.Msg <- comm.MsgInfo{
+			 inputMsg := comm.MsgInfo{
 				Event: comm.EventPublicMsg,
-				Data:  cl.Name+":" +chatMsg,
 			}
-
+			switch chatMsg {
+			case comm.EventInputAT:
+				inputMsg.Event = comm.EventInputAT
+			case comm.EventInputAllUsers:
+				inputMsg.Event = comm.EventInputAllUsers
+			default:
+				inputMsg.Data = fmt.Sprintf("%s 说：%s",cl.Name,chatMsg)
+			}
+			cl.Msg <-inputMsg
 		}
 		chatMsg = ""
-		_, _ = fmt.Scanln(&chatMsg)
-
+		rd  = bufio.NewReader(os.Stdin)
+		rdMsg,_,err = rd.ReadLine()
+		if err != nil {
+			println(err.Error())
+			continue
+		}
+		chatMsg = string(rdMsg)
 	}
 	_ = cl.Conn.Close()
 	close(cl.Msg)
@@ -124,15 +139,15 @@ func (c *Client) DoMessage(msg *comm.MsgInfo) {
 			return
 		}
 		c.Name = msg.Data
-		fmt.Println(fmt.Sprintf( `(我)：%s`, c.Name))
+		fmt.Println("我"+msg.Data+"又回来啦 >_< ")
 		return
 	}
-	if msg.Event == comm.EventAllUsers {
+	if msg.Event == comm.EventInputAllUsers {
 		fmt.Println(msg.Data)
 		//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
 		return
 	}
-	if msg.Event == comm.EventAT {
+	if msg.Event == comm.EventInputAT {
 		if  msg.Code != 0{
 			fmt.Println(msg.Data)
 			return
@@ -140,7 +155,7 @@ func (c *Client) DoMessage(msg *comm.MsgInfo) {
 	}
 	fmt.Println("\n"+msg.Data)
 	if msg.Event != comm.EventSysInfo{
-		fmt.Print(`(我)：`)
+		//fmt.Print(`(我)：`)
 	}
 	//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
 
