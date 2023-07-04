@@ -40,7 +40,7 @@ func (u *User) HandleMsg() {
 		select {
 		case m :=<-u.C:
 			v, _ := json.Marshal(m)
-			_, err := u.Conn.Write(v)
+			_, err := u.Conn.Write([]byte(comm.B64Encode(v)))
 			if err != nil {
 				fmt.Println("send GbMsg fail", err.Error())
 			}

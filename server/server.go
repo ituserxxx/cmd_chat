@@ -89,7 +89,7 @@ func (s *ChatServer) handlerUserAccept(conn net.Conn) {
 		msg := strings.TrimSpace(string(buf[:l]))
 
 		var d *comm.MsgInfo
-		err = json.Unmarshal([]byte(msg), &d)
+		err = json.Unmarshal(comm.B64Encry(msg), &d)
 		if err != nil {
 			fmt.Println("unmarshal failed!")
 			continue

@@ -128,7 +128,7 @@ func (c *Client) listenSendChan() {
 		select {
 		case m := <-c.Msg:
 			v, _ := json.Marshal(m)
-			_, err := c.Conn.Write(v)
+			_, err := c.Conn.Write([]byte(comm.B64Encode(v)))
 			if err != nil {
 				fmt.Println("client send Data fail", err.Error())
 			}
@@ -156,7 +156,7 @@ func (c *Client) handleUserAcceptMsg() {
 		// 获取收到的消息
 		msg := strings.TrimSpace(string(buf[:l]))
 		var d *comm.MsgInfo
-		err = json.Unmarshal([]byte(msg), &d)
+		err = json.Unmarshal(comm.B64Encry(msg), &d)
 		if err != nil {
 			fmt.Println("unmarshal failed!")
 			continue
