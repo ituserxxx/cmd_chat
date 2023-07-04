@@ -69,7 +69,7 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 	}
 
 	if msg.Event == comm.EventInputAllUsers {
-		au := fmt.Sprintf("------------------\n--在线总人数：%d 人", IMserver.onlineUserTotal)
+		au := fmt.Sprintf("\n------------------\n--在线总人数：%d 人", IMserver.onlineUserTotal)
 		for _, us := range IMserver.onlineMap {
 			au += "\n--" + us.Name
 		}
@@ -81,10 +81,11 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 		return
 	}
 
-	if msg.Event == comm.EventInputAT {
-		l := strings.Split(msg.Data, "|")
-		toUserName := l[0]
-		info := l[1]
+	if msg.Event == comm.EventInputAT && msg.Data != ""{
+		//msg:{Event:"@", Data:"xx1:ok", Code:0}
+		mhIndex := strings.Index(msg.Data,":")
+		toUserName := msg.Data[:mhIndex]
+		toMsg := msg.Data[mhIndex+1:]
 		var toUser *User
 		for _, toUser = range IMserver.onlineMap {
 			if toUser.Name == toUserName {
@@ -94,24 +95,14 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 		if toUser == nil {
 			u.C <- comm.MsgInfo{
 				Code: 1,
-				Data: "对方用户不存在",
-			}
-			return
-		}
-
-		toMsg := strings.Split(msg.Data, "|")[1]
-		if toMsg == "" {
-
-			u.C <- comm.MsgInfo{
-				Code: 1,
-				Data: "消息格式不对，示例：@xxx你在干嘛？",
+				Data: "对方用户已经不在线了~~",
 			}
 			return
 		}
 
 		toUser.C <- comm.MsgInfo{
 			Event: comm.EventInputAT,
-			Data:  "用户：" + u.Name + "对我悄悄说：" + info,
+			Data:  "悄悄话：用户：" + u.Name + " 对我说：" + toMsg,
 		}
 		return
 	}

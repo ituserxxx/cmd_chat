@@ -22,7 +22,6 @@ type Client struct {
 	Msg        chan comm.MsgInfo
 }
 
-
 func NewUserClient(serIp string, serPo int, cname string) {
 	if len(cname) == 0 {
 		fmt.Println("昵称一定要有哦")
@@ -46,7 +45,7 @@ func NewUserClient(serIp string, serPo int, cname string) {
 	go cl.handleUserAcceptMsg()
 	go cl.listenSendChan()
 	cl.Msg <- comm.MsgInfo{
-		Event:comm.EventInitName,
+		Event: comm.EventInitName,
 		Data:  cname,
 	}
 
@@ -56,32 +55,50 @@ func NewUserClient(serIp string, serPo int, cname string) {
 	case <-time.After(time.Second * 5):
 		break
 	}
- 	var chatMsg string
-	rd  := bufio.NewReader(os.Stdin)
-	rdMsg,_,err := rd.ReadLine()
+
+	var chatMsg string
+	rd := bufio.NewReader(os.Stdin)
+	rdMsg, _, err := rd.ReadLine()
 	if err != nil {
 		println(err.Error())
 		return
 	}
 	chatMsg = string(rdMsg)
 	for chatMsg != "exit" {
+		var prMyIsTruc bool
 		if len(chatMsg) != 0 {
-			 inputMsg := comm.MsgInfo{
+			inputMsg := comm.MsgInfo{
 				Event: comm.EventPublicMsg,
 			}
-			switch chatMsg {
-			case comm.EventInputAT:
-				inputMsg.Event = comm.EventInputAT
-			case comm.EventInputAllUsers:
+			if chatMsg == comm.EventInputAllUsers{
 				inputMsg.Event = comm.EventInputAllUsers
-			default:
-				inputMsg.Data = fmt.Sprintf("%s 说：%s",cl.Name,chatMsg)
+			}else if chatMsg[:1] == comm.EventInputAT{
+				inputMsg.Event = comm.EventInputAT
+				prMyIsTruc = true
+				chatMsg = chatMsg[1:]
+				mhIndex := strings.Index(chatMsg,":")
+				toUserName := chatMsg[:mhIndex]
+				toMsg := chatMsg[mhIndex+1:]
+
+				if len(toUserName) == 0||len(toMsg)==0{
+					fmt.Println("系统提示:消息格式不对，示例：@xxx:你在干嘛？")
+					fmt.Print("(我):")
+					return
+				}
+				inputMsg.Data = chatMsg
+			}else{
+				prMyIsTruc = true
+				inputMsg.Data = fmt.Sprintf("%s 说：%s", cl.Name, chatMsg)
 			}
-			cl.Msg <-inputMsg
+
+			cl.Msg <- inputMsg
+		}
+		if prMyIsTruc {
+			fmt.Print("(我):")
 		}
 		chatMsg = ""
-		rd  = bufio.NewReader(os.Stdin)
-		rdMsg,_,err = rd.ReadLine()
+		rd = bufio.NewReader(os.Stdin)
+		rdMsg, _, err = rd.ReadLine()
 		if err != nil {
 			println(err.Error())
 			continue
@@ -91,8 +108,6 @@ func NewUserClient(serIp string, serPo int, cname string) {
 	_ = cl.Conn.Close()
 	close(cl.Msg)
 }
-
-
 
 func (c *Client) listenSendChan() {
 	for {
@@ -104,6 +119,7 @@ func (c *Client) listenSendChan() {
 		}
 	}
 }
+
 //监听客户端输入，然后在发送给服务端
 func (c *Client) handleUserAcceptMsg() {
 	//一旦client.conn 有数据就copy 到stdout 标准输出上，永久阻塞监听
@@ -132,31 +148,30 @@ func (c *Client) handleUserAcceptMsg() {
 
 }
 func (c *Client) DoMessage(msg *comm.MsgInfo) {
+	//fmt.Printf("msg %#v", msg)
 	if msg.Event == comm.EventInitName {
-		if msg.Code != 0{
+		if msg.Code != 0 {
 			fmt.Println(msg.Data)
-			c.GoOut<-"1"
+			c.GoOut <- "1"
 			return
 		}
 		c.Name = msg.Data
-		fmt.Println("我"+msg.Data+"又回来啦 >_< ")
+		fmt.Println("我" + msg.Data + "又回来啦 >_< ")
+		fmt.Print(`(我)：`)
 		return
 	}
 	if msg.Event == comm.EventInputAllUsers {
 		fmt.Println(msg.Data)
-		//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
+		fmt.Print(`(我)：`)
 		return
 	}
 	if msg.Event == comm.EventInputAT {
-		if  msg.Code != 0{
+		if msg.Code != 0 {
 			fmt.Println(msg.Data)
 			return
 		}
 	}
-	fmt.Println("\n"+msg.Data)
-	if msg.Event != comm.EventSysInfo{
-		//fmt.Print(`(我)：`)
-	}
-	//fmt.Println(fmt.Sprintf(myMsgF, c.Name))
+	fmt.Println("\n" + msg.Data)
+	fmt.Print(`(我)：`)
 
 }
