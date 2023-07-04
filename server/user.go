@@ -127,7 +127,7 @@ func (u *User) Downline() {
 	if u.Status == "online"{
 		IMserver.GuangboMsgToOtherUser(comm.EventSysInfo, u.ID,  "系统提示:"+u.Name+"下线了~~")
 	}
-	IMserver.PrintChan <- fmt.Sprintf("\nuser down:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
+	IMserver.PrintChan <- fmt.Sprintf("\nuser down:%s   当前总人数 total:%d", u.ID, IMserver.onlineUserTotal)
 	_ = u.Conn.Close()
 }
 
@@ -138,5 +138,5 @@ func (u *User) Online() {
 	IMserver.onlineUserTotal++
 	IMserver.mapLock.Unlock()
 
-	IMserver.PrintChan <- fmt.Sprintf("\n user online:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
+	IMserver.PrintChan <- fmt.Sprintf("\n user online:%s   当前总人数 total:%d", u.ID, IMserver.onlineUserTotal)
 }

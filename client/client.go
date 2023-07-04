@@ -15,14 +15,14 @@ import (
 
 type Client struct {
 	ServerIp   string
-	ServerPort int
+	ServerPort string
 	Name       string
 	Conn       net.Conn
 	Status       string
 	Msg        chan comm.MsgInfo
 }
 
-func NewUserClient(serIp string, serPo int, cname string) {
+func NewUserClient(serIp ,serPo , cname string) {
 	if len(cname) == 0 {
 		fmt.Println("昵称一定要有哦")
 	}
@@ -34,7 +34,7 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		Conn:       nil,
 		Msg:        make(chan comm.MsgInfo),
 	}
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", serIp, serPo))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", serIp, serPo))
 	if err != nil {
 		fmt.Println("client Dial fail:", err.Error())
 		return

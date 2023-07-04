@@ -13,7 +13,7 @@ import (
 
 type ChatServer struct {
 	ip              string
-	port            int
+	port            string
 	GbMsg           chan string      //广播消息
 	onlineUserTotal int64            //在线用户总数
 	onlineMap       map[string]*User //在线用户
@@ -23,7 +23,8 @@ type ChatServer struct {
 
 var IMserver *ChatServer
 
-func NewServer(ip string, port int) {
+func NewServer(ip ,port string) {
+
 	ser := &ChatServer{
 		ip:        ip,
 		port:      port,
@@ -36,9 +37,9 @@ func NewServer(ip string, port int) {
 }
 
 func (s *ChatServer) Start() {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.ip, s.port))
 	if err != nil {
-		fmt.Println("listen err", err.Error())
+		fmt.Println("服务开启失败，请检查参数~~")
 		return
 	}
 	defer listener.Close()
