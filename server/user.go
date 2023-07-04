@@ -59,7 +59,7 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 		for _, us := range IMserver.onlineMap {
 			if us.Name == newName {
 				info.Code = 1
-				info.Data = fmt.Sprintf("昵称：%s 已经被人用了，换个吧", newName)
+				info.Data = fmt.Sprintf("系统提示:昵称 '%s' 已经被人用了，换个吧", newName)
 				u.Status ="out"
 				u.Downline()
 				u.C<-info
