@@ -18,7 +18,7 @@ type Client struct {
 	ServerPort int
 	Name       string
 	Conn       net.Conn
-	GoOut      chan string
+	Status       string
 	Msg        chan comm.MsgInfo
 }
 
@@ -33,7 +33,6 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		ServerPort: serPo,
 		Conn:       nil,
 		Msg:        make(chan comm.MsgInfo),
-		GoOut:      make(chan string),
 	}
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", serIp, serPo))
 	if err != nil {
@@ -43,8 +42,6 @@ func NewUserClient(serIp string, serPo int, cname string) {
 	defer func() {
 		conn.Close()
 		close(cl.Msg)
-		close(cl.GoOut)
-
 	}()
 	cl.Conn = conn
 	// 监听用户输入
@@ -54,13 +51,23 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		Event: comm.EventInitName,
 		Data:  strings.TrimSpace(cname),
 	}
+	var i int
+	for {
+		if i > 5{
+			break
+		}
+		switch cl.Status {
+		case "fial":
+			return
+		case "online":
+			break
+		default:
 
-	select {
-	case <-cl.GoOut:
-		return
-	case <-time.After(time.Second * 5):
-		break
+		}
+		time.Sleep(time.Second)
+		i++
 	}
+
 
 	var chatMsg string
 	rd := bufio.NewReader(os.Stdin)
@@ -115,11 +122,18 @@ func NewUserClient(serIp string, serPo int, cname string) {
 
 func (c *Client) listenSendChan() {
 	for {
-		m := <-c.Msg
-		v, _ := json.Marshal(m)
-		_, err := c.Conn.Write(v)
-		if err != nil {
-			fmt.Println("client send Data fail", err.Error())
+		if c.Status == "fial"{
+			return
+		}
+		select {
+		case m := <-c.Msg:
+			v, _ := json.Marshal(m)
+			_, err := c.Conn.Write(v)
+			if err != nil {
+				fmt.Println("client send Data fail", err.Error())
+			}
+		default:
+			time.Sleep(time.Second)
 		}
 	}
 }
@@ -156,9 +170,10 @@ func (c *Client) DoMessage(msg *comm.MsgInfo) {
 	if msg.Event == comm.EventInitName {
 		if msg.Code != 0 {
 			fmt.Println(msg.Data)
-			c.GoOut <- "1"
+			c.Status = "fial"
 			return
 		}
+		c.Status = "online"
 		c.Name = msg.Data
 		fmt.Println("我" + msg.Data + "又回来啦 >_< ")
 		fmt.Print(`(我)：`)
@@ -176,6 +191,9 @@ func (c *Client) DoMessage(msg *comm.MsgInfo) {
 		}
 	}
 	fmt.Println("\n" + msg.Data)
+	if msg.Code != 0 {
+		fmt.Println(msg.Data)
+		return
+	}
 	fmt.Print(`(我)：`)
-
 }

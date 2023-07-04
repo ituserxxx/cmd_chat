@@ -34,6 +34,7 @@ func CreateNewUser(name string, con net.Conn) *User {
 func (u *User) HandleMsg() {
 	for {
 		if u.Status == "out"{
+			u.Conn.Close()
 			break
 		}
 		select {
@@ -55,20 +56,20 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 
 	if msg.Event == comm.EventInitName {
 		newName := msg.Data
-		info := comm.MsgInfo{}
+		info := comm.MsgInfo{
+			Event: comm.EventInitName,
+		}
 		for _, us := range IMserver.onlineMap {
 			if us.Name == newName {
 				info.Code = 1
 				info.Data = fmt.Sprintf("系统提示:昵称 '%s' 已经被人用了，换个吧", newName)
-				u.Status ="out"
-				u.Downline()
 				u.C<-info
+				u.Status ="out"
 				return
 			}
 		}
 		u.Name = newName
 		u.Status ="online"
-		info.Event = comm.EventInitName
 		info.Data = newName
 
 		IMserver.GuangboMsgToOtherUser(comm.EventSysInfo,   u.ID,"系统提示:"+u.Name+"上线了~~")
@@ -120,8 +121,9 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 func (u *User) Downline() {
 	IMserver.mapLock.Lock()
 	delete(IMserver.onlineMap, u.ID)
-	IMserver.mapLock.Unlock()
 	IMserver.onlineUserTotal--
+	IMserver.mapLock.Unlock()
+
 	if u.Status == "online"{
 		IMserver.GuangboMsgToOtherUser(comm.EventSysInfo, u.ID,  "系统提示:"+u.Name+"下线了~~")
 	}
@@ -133,9 +135,8 @@ func (u *User) Online() {
 	//加入在线用户列表
 	IMserver.mapLock.Lock()
 	IMserver.onlineMap[u.ID] = u
+	IMserver.onlineUserTotal++
 	IMserver.mapLock.Unlock()
 
-	// 在线总数+1
-	IMserver.onlineUserTotal++
 	IMserver.PrintChan <- fmt.Sprintf("\n user online:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
 }
