@@ -39,6 +39,7 @@ func NewServer(ip ,port string) {
 func (s *ChatServer) Start() {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.ip, s.port))
 	if err != nil {
+		println(err.Error())
 		fmt.Println("服务开启失败，请检查参数~~")
 		return
 	}

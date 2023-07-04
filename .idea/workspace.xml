@@ -2,17 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="13d501c5-d8d6-446c-83b1-a958eca08be5" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/comm/a_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat_client_linux" beforeDir="false" afterPath="$PROJECT_DIR$/chat_client_linux" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat_client_win.exe" beforeDir="false" afterPath="$PROJECT_DIR$/chat_client_win.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat_server_linux" beforeDir="false" afterPath="$PROJECT_DIR$/chat_server_linux" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat_server_win.exe" beforeDir="false" afterPath="$PROJECT_DIR$/chat_server_win.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/comm/comm.go" beforeDir="false" afterPath="$PROJECT_DIR$/comm/comm.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/code_server.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/user.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
