@@ -66,7 +66,12 @@ func (s *ChatServer) handlerUserAccept(conn net.Conn) {
 	//初始化 用户
 	u := CreateNewUser("", conn)
 	//广播用户下线
-	defer u.Downline()
+	defer func() {
+		u.Downline()
+	}()
+	// 开启消息接收监听
+	go u.HandleMsg()
+	u.Online()
 	//接收客户端发送的消息
 	buf := make([]byte, 1024)
 	for {

@@ -4,6 +4,7 @@
     <list default="true" id="13d501c5-d8d6-446c-83b1-a958eca08be5" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/user.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

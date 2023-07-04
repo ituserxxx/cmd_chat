@@ -40,13 +40,19 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		fmt.Println("client Dial fail:", err.Error())
 		return
 	}
+	defer func() {
+		conn.Close()
+		close(cl.Msg)
+		close(cl.GoOut)
+
+	}()
 	cl.Conn = conn
 	// 监听用户输入
 	go cl.handleUserAcceptMsg()
 	go cl.listenSendChan()
 	cl.Msg <- comm.MsgInfo{
 		Event: comm.EventInitName,
-		Data:  cname,
+		Data:  strings.TrimSpace(cname),
 	}
 
 	select {
@@ -63,7 +69,7 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		println(err.Error())
 		return
 	}
-	chatMsg = string(rdMsg)
+	chatMsg = strings.TrimSpace(string(rdMsg))
 	for chatMsg != "exit" {
 		var prMyIsTruc bool
 		if len(chatMsg) != 0 {
@@ -77,15 +83,15 @@ func NewUserClient(serIp string, serPo int, cname string) {
 				prMyIsTruc = true
 				chatMsg = chatMsg[1:]
 				mhIndex := strings.Index(chatMsg,":")
-				toUserName := chatMsg[:mhIndex]
-				toMsg := chatMsg[mhIndex+1:]
+				toUserName :=strings.TrimSpace( chatMsg[:mhIndex])
+				toMsg := strings.TrimSpace(chatMsg[mhIndex+1:])
 
 				if len(toUserName) == 0||len(toMsg)==0{
 					fmt.Println("系统提示:消息格式不对，示例：@xxx:你在干嘛？")
 					fmt.Print("(我):")
 					return
 				}
-				inputMsg.Data = chatMsg
+				inputMsg.Data = fmt.Sprintf("%s:%s",toUserName,toMsg)
 			}else{
 				prMyIsTruc = true
 				inputMsg.Data = fmt.Sprintf("%s 说：%s", cl.Name, chatMsg)
@@ -105,8 +111,6 @@ func NewUserClient(serIp string, serPo int, cname string) {
 		}
 		chatMsg = string(rdMsg)
 	}
-	_ = cl.Conn.Close()
-	close(cl.Msg)
 }
 
 func (c *Client) listenSendChan() {

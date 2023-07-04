@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
 type User struct {
@@ -13,6 +14,7 @@ type User struct {
 	Name string
 	C    chan comm.MsgInfo
 	Conn net.Conn
+	Status string
 }
 
 func CreateNewUser(name string, con net.Conn) *User {
@@ -24,9 +26,6 @@ func CreateNewUser(name string, con net.Conn) *User {
 		Conn: con,
 	}
 
-	// 开启消息接收监听
-	go u.HandleMsg()
-	u.Online()
 	return u
 
 }
@@ -34,11 +33,18 @@ func CreateNewUser(name string, con net.Conn) *User {
 // HandleMsg 监听当前User channel ，一旦有消息，直接发送给当前用户
 func (u *User) HandleMsg() {
 	for {
-		m := <-u.C
-		v, _ := json.Marshal(m)
-		_, err := u.Conn.Write(v)
-		if err != nil {
-			fmt.Println("send GbMsg fail", err.Error())
+		if u.Status == "out"{
+			break
+		}
+		select {
+		case m :=<-u.C:
+			v, _ := json.Marshal(m)
+			_, err := u.Conn.Write(v)
+			if err != nil {
+				fmt.Println("send GbMsg fail", err.Error())
+			}
+		default:
+			time.Sleep(time.Second)
 		}
 	}
 
@@ -54,12 +60,14 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 			if us.Name == newName {
 				info.Code = 1
 				info.Data = fmt.Sprintf("昵称：%s 已经被人用了，换个吧", newName)
+				u.Status ="out"
 				u.Downline()
 				u.C<-info
 				return
 			}
 		}
 		u.Name = newName
+		u.Status ="online"
 		info.Event = comm.EventInitName
 		info.Data = newName
 
@@ -81,7 +89,7 @@ func (u *User) DoMessage(msg *comm.MsgInfo) {
 		return
 	}
 
-	if msg.Event == comm.EventInputAT && msg.Data != ""{
+	if msg.Event == comm.EventInputAT {
 		//msg:{Event:"@", Data:"xx1:ok", Code:0}
 		mhIndex := strings.Index(msg.Data,":")
 		toUserName := msg.Data[:mhIndex]
@@ -114,7 +122,9 @@ func (u *User) Downline() {
 	delete(IMserver.onlineMap, u.ID)
 	IMserver.mapLock.Unlock()
 	IMserver.onlineUserTotal--
-	IMserver.GuangboMsgToOtherUser(comm.EventSysInfo, u.ID,  "系统提示:"+u.Name+"下线了~~")
+	if u.Status == "online"{
+		IMserver.GuangboMsgToOtherUser(comm.EventSysInfo, u.ID,  "系统提示:"+u.Name+"下线了~~")
+	}
 	IMserver.PrintChan <- fmt.Sprintf("\nuser down:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
 	_ = u.Conn.Close()
 }
@@ -124,6 +134,7 @@ func (u *User) Online() {
 	IMserver.mapLock.Lock()
 	IMserver.onlineMap[u.ID] = u
 	IMserver.mapLock.Unlock()
+
 	// 在线总数+1
 	IMserver.onlineUserTotal++
 	IMserver.PrintChan <- fmt.Sprintf("\n user online:%s   user total:%d", u.ID, IMserver.onlineUserTotal)
