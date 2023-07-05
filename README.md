@@ -20,16 +20,16 @@ go build -o chat_server_win.exe code_server.go
 go build -o chat_client_win.exe code_client.go
 ```
 
-运行服务端
+双击运行服务端
 
 ```shell
-.\chat_server_win.exe ip port
+chat_server_win.exe
 ```
 
-运行客户端
+双击运行客户端
 
 ```shell
-.\chat_client_win.exe ip port name
+chat_client_win.exe
 ```
 
 ### 本地开发
@@ -37,13 +37,14 @@ go build -o chat_client_win.exe code_client.go
 运行服务端
 
 ```shell
-go run code_server.go ip port
+go run code_server_linux.go ip port
 ```
 
 运行客户端
 
 ```shell
-go run code_client.go ip port name
+go run code_client_linux.go ip port name
+go run code_client_win.go ip port name
 ```
 
 ### 打包服务端到 Linux 环境
@@ -54,9 +55,9 @@ go run code_client.go ip port name
 set GOARCH=amd64
 set GOOS=linux
 # 打包服务端
-go build -o chat_server_linux code_server.go
+go build -o chat_server_linux code_server_linux.go
 # 打包客户端
-go build -o chat_client_linux code_client.go
+go build -o chat_client_linux code_client_linux.go
 ```
 
 运行服务端
