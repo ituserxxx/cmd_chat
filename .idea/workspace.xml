@@ -2,9 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="13d501c5-d8d6-446c-83b1-a958eca08be5" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/frontLib/arial.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontLib/arialbd.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontLib/arialbi.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontLib/ariali.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontLib/ariblk.ttf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/code_server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,23 +49,33 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="go.vgo" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/frontLib" />
+    <property name="settings.editor.selected.configurable" value="go" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\11751\project\go_project\xxx\cmd_chat\frontLib" />
       <recent name="C:\Users\11751\project\go_project\xxx\cmd_chat" />
       <recent name="C:\Users\11751\project\go_project\xxx\cmd_chat\client" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestName in cmd_chat/comm">
+  <component name="RunManager" selected="Go Build.go build cmd_chat">
     <configuration name="go build cmd_chat" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="cmd_chat" />
       <working_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
+      <kind value="FILE" />
       <package value="cmd_chat" />
       <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/main.go" />
+      <filePath value="$PROJECT_DIR$/gui.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build cmd_chat_gui" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
+      <module name="cmd_chat" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <package value="cmd_chat" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/main.go|$PROJECT_DIR$/gui.go" />
       <method v="2" />
     </configuration>
     <configuration name="TestName in cmd_chat/comm" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -78,8 +92,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestName in cmd_chat/comm" />
         <item itemvalue="Go Build.go build cmd_chat" />
+        <item itemvalue="Go Test.TestName in cmd_chat/comm" />
+        <item itemvalue="Go Build.go build cmd_chat_gui" />
       </list>
     </recent_temporary>
   </component>
