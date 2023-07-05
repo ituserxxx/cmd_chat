@@ -16,7 +16,7 @@ func clientGui() (string,string,string)  {
 	var ym,port,name string
 	myApp := app.New()
 	myWindow := myApp.NewWindow("cmd chat login")
-
+	defer myWindow.Close()
 	ymEntry := widget.NewEntry()
 	portEntry := widget.NewEntry()
 	nameEntry := widget.NewEntry()
@@ -31,7 +31,7 @@ func clientGui() (string,string,string)  {
 		ym = ymEntry.Text
 		port= portEntry.Text
 		name= nameEntry.Text
-		myWindow.Close()
+
 	}
 	form.OnCancel = func() { }
 	myWindow.SetContent(form)

@@ -25,12 +25,16 @@ go build -o chat_client_win.exe code_client.go
 ```shell
 chat_server_win.exe
 ```
+![img](./img/server_win_1.png)
+![img](./img/server_win_2.png)
 
 双击运行客户端
 
 ```shell
 chat_client_win.exe
 ```
+![img](./img/img_1.png)
+![img](./img/img_2.png)
 
 ### 本地开发
 
@@ -39,13 +43,14 @@ chat_client_win.exe
 ```shell
 go run code_server_linux.go ip port
 ```
+![img](./img/img.png)
 
 运行客户端
 
 ```shell
 go run code_client_linux.go ip port name
-go run code_client_win.go ip port name
 ```
+![img](./img/win_chat.png)
 
 ### 打包服务端到 Linux 环境
 
